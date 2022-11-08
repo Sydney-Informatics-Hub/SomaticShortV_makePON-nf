@@ -1,105 +1,211 @@
-# Nextflow DSL2 template
+# SomaticShortV-makePON-nf
 
-This is a template for creating Nextflow DSL2 pipelines. **This template is still in development, with further features and improved documentation to be added.** 
+<p align="center">
+:wrench: This pipeline is currently under development :wrench:
+</p>
 
-**Check out the [Nextflow guides](https://github.com/Sydney-Informatics-Hub/Nextflow_DSL2_template/tree/main/guides)** for tips and examples of various challenging aspects of writing Nextflow code for beginners. We're progressively developing it as we write our own Nextflow pipelines.    
+  - [Description](#description)
+  - [Diagram](#diagram)
+  - [User guide](#user-guide)
+      - [Infrastructure usage and
+        recommendations](#infrastructure-usage-and-recommendations)
+  - [Benchmarking](#benchmarking)
+  - [Workflow summaries](#workflow-summaries)
+      - [Metadata](#metadata)
+      - [Component tools](#component-tools)
+  - [Additional notes](#additional-notes)
+  - [Help/FAQ/Troubleshooting](#helpfaqtroubleshooting)
+  - [Acknowledgements/citations/credits](#acknowledgementscitationscredits)
 
-## Description  
-[Nextflow](https://www.nextflow.io/) is open source and scalable workflow management software, initially developed for bioinformatics. It enables the development and running of integrated, reproducible workflows consisting of multiple processes, various environment management systems, scripting languages, and software packages. Nextflow developers claim Nextflow is designed to have a minimal learning curve as it doesnt require end users to learn new programming languages. However, its extensive capabilities, use of Groovy syntax, and [comprehensive documentation](https://www.nextflow.io/docs/latest/index.html) can be overwhelming for end users who aren't well versed in programming and software development.  
+## Description 
 
-We developed this template (using DSL2 syntax) to aid beginners in developing their own Nextflow workflows. Depending on your needs you can edit the files here to develop your own bioinformatics workflows. 
+SomaticShortV-makePON-nf is a Nextflow pipeline for creating somatic Panel Of Normals (PoN) to be used for identifying somatic short variant events in Illumina short read whole genome sequence data. 
+We have followed the [GATK Best practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035894731-Somatic-short-variant-discovery-SNVs-Indels-) . The input to this pipeline are  
 
-## Installing Nextflow
+The creation of somatic Panel Of Normals (PoN) involves converting the Normal BAMs to PON. The PoN's are -
+  * Made from normal samples i.e. the samples derived from healthy tissue and 
+  * Their main purpose is to capture recurrent technical artifacts in order to improve the results of the variant calling analysis.
 
-Depending on the system you're working on there are a few options for installing and running Nextflow including reproducible options like bioconda and Singularity. See [here](https://nf-co.re/usage/installation) for installation instructions. 
 
-Once you have installed Nextflow, you can configure it to run on your system. This template only provides the standard `nextflow.config` file. See [here](https://nf-co.re/usage/configuration#running-nextflow-on-your-system) for tips on creating your own configuration files from the team at nf-core. Also see [here](https://www.nextflow.io/blog/2021/nextflow-developer-environment.html) for some set up tips.
+## Diagram
 
-## Using this repository 
+<p align="center"> 
+<img src="./images/Somatic_variant_calling.png" width="80%">
+</p> 
 
-This repository contains an example workflow with two processes, one that follows on from the other. The example processes contain a small bash command each that play around with the text in `samples.txt` (provided). It is currently only designed for small workflows that are designed to be run locally. 
+## User guide 
 
-As is standard for all nextflow pipelines, when the template is run using `nextflow run main.nf` from within the `Nextflow_DSL2_template` repository, some details will be printed to the screen, and a number of directories will be created in the `Nextflow_DSL2_template` repository. This includes: 
-* A `work/` directory 
-* A `.nextflow.log` file
-* A `.nextflow/` directory 
-* Outputs specified by the example code: `all_results/` which contains results and `runInfo` which contains runtime reports.
+To run this pipeline, you will need to prepare your input files, reference data, and clone this repository. Before proceeding, ensure Nextflow is installed on the system you're working on. To install Nextflow, see these [instructions](https://www.nextflow.io/docs/latest/getstarted.html#installation). 
 
-This repository is structured as follows: 
+### 1. Prepare inputs
+
+To run this pipeline you will need the following inputs: 
+
+* Paired-end BAM files
+* Corresponding BAM index files  
+* Input sample sheet 
+
+This pipeline processes paired-end BAM files and is capable of processing multiple samples in parallel. BAM files are expected to be coordinate sorted and indexed (see [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) for an example of a best practice workflow that can generate these files).  
+
+You will need to create a sample sheet with information about the samples you are processing, before running the pipeline. This file must be **tab-separated** and contain a header and one row per sample. Columns should correspond to sampleID, BAM file, BAI file: 
+
+|sampleID|bam                   |bai                       |
+|--------|----------------------|--------------------------|
+|SAMPLE1 |/data/Bams/sample1.bam|/data/Bams/sample1.bam.bai|
+|SAMPLE2 |/data/Bams/sample2.bam|/data/Bams/sample2.bam.bai|
+
+When you run the pipeline, you will use the mandatory `--input` parameter to specify the location and name of the input file: 
 
 ```
-Nextflow_DSL2_template
+--input /path/to/samples.tsv
+```
+
+### 2. Prepare the reference materials 
+
+To run this pipeline you will need the following reference files:
+
+* Indexed reference genome in FASTA format 
+* [VEP cache](https://asia.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache) (Optional) 
+
+You will need to download and index a copy of the reference genome you would like to use. Reference FASTA files must be accompanied by a .fai index file. If you are working with a species that has a public reference genome, you can download FASTA files from the [Ensembl](https://asia.ensembl.org/info/data/ftp/index.html), [UCSC](https://genome.ucsc.edu/goldenPath/help/ftp.html), or [NCBI](https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/) ftp sites. You can use our [IndexReferenceFasta-nf pipeline](https://github.com/Sydney-Informatics-Hub/IndexReferenceFasta-nf) to generate indexes. 
+
+When you run the pipeline, you will use the mandatory `--ref` parameter to specify the location and name of the reference.fasta file: 
+
+```
+--ref /path/to/reference.fasta
+```
+
+If you intend to run the optional step of variant annotation with VEP, you will need to manually download a cache of the VEP database before running the pipeline (if available for your organism). See [these instructions](https://asia.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache) for how to prepare your data and [Ensembl's VEP ftp site](https://ftp.ensembl.org/pub/release-108/variation/indexed_vep_cache/), for available databases. In short, you will need to do the following: 
+
+**Create a local cache directory** 
+
+Be aware, the VEP cache requires a lot of disk space, for example the Hg38 108 release database requires ~21G. Because of this it is essential to create this directory somewhere with enough disk space to store it. Create the directory:  
+```
+mkdir -p <name of cache directory>
+```
+
+**Download a copy of the cache**
+
+Download the cache to your cache directory. For example:  
+```
+wget -P <name of cache directory> ftp://ftp.ensembl.org/pub/release-108/variation/indexed_vep_cache/homo_sapiens_vep_108_GRCh38.tar.gz
+```
+
+Unzip it: 
+
+```
+tar xzf homo_sapiens_vep_108_GRCh38.tar.gz
+```
+
+When you run the pipeline, if you would like to perform variant annotation with VEP, you will use the `--VEPcache` parameter to specify the location and name of the input file: 
+
+```
+--VEPcache /path/to/VEP_cache 
+```
+
+### 3. Clone this repository 
+
+Download the code contained in this repository with: 
+
+```
+git clone https://github.com/Sydney-Informatics-Hub/GermlineShortV-nf
+```
+
+This will create a directory with the following structure: 
+```
+SomaticShortV_makePON-nf/
 ├── LICENSE
 ├── README.md
-├── cleanup
+├── config/
 ├── main.nf
-├── guides 
-├── modules
-│   ├── process1.nf
-│   └── process2.nf
-├── nextflow.config
-├── run_pipeline
-└── samples.txt
+├── modules/
+└── nextflow.config
 ```
-The main components for using this template are: 
-* `main.nf` 
-* `nextflow.config` 
-* `modules/` 
+The important features are: 
 
-Some extra components for running this template are: 
-* `cleanup`: removes workdir, results directory, as well as hidden nextflow logs and directories that will be generated when the template example is run. To use: `bash cleanup` 
-* `run_pipeline`: runs the nextflow command for this template. To use: `bash run_pipeline` 
-* `samples.txt`: contains an example file to be processed with the example processes in the template. 
-* `guides`: short explainers of how to construct various features using nextflow. This will be added to progressively.  
+* **main.nf** contains the main nextflow script that calls all the processes in the workflow.
+* **nextflow.config** contains default parameters to use in the pipeline.
+* **modules** contains individual process files for each step in the workflow. 
+* **config** contains infrastructure-specific config files (this is currently under development)
 
-### What's in `main.nf`? 
+### 4. Run the pipeline 
 
-This is the primary pipeline script which pulls additional code for subprocesses from the `module/` directory. It contains: 
-* DSL-2 enable command 
-* A customisable header for the pipeline that will be printed to the screen when run with `nextflow run main.nf` 
-* A customisable help command for the pipeline that can be printed when `nextflow run main.nf --help` is run. This can also be customised to be run when default/required arguments are not provided. To do this, see the `workflow` help function. 
-* Channel defintions to be included in the workflow. See [here](https://www.nextflow.io/docs/latest/dsl2.html#channel-forking) for more details.  
-* The main workflow structure that determines which processes will be run in what order (based on input and outputs provided). This template only includes 2 templates. This is required by DSL-2 syntax. 
-* A customisable statement printed to the screen upon workflow completion. The statement to be printed depends on whether the workflow completed successfully. 
+The most basic run command for this pipeline is: 
 
-### What's in `nextflow.config`? 
+```
+nextflow run main.nf --input sample.tsv --ref /path/to/ref 
+```
 
-This is the main configuration script that Nextflow looks for when you run `nextflow run main.nf`. It contains a number of property definitions that are used by the pipeline. A key feature of Nextflow is the ability to separate workflow implementation from the underlying execution platformm using this configuration file. Since we can add additional configuration files for different run environments (i.e. job schedulers, use of singularity vs bioconda) each configuration file can contain conflicting settings and parameters listed in this file can be overwritten in the run command by specifiying relevant commands. See [here](https://www.nextflow.io/docs/latest/config.html#configuration-file) for details on the heirarchy of confuration files. This file contains: 
-* Mainfest for defining some metadata including authorship, link to the repo, version etc 
-* Mandated minimal version of Nextflow that can be used to run this pipeline 
-* Resume function that allows the pipeline to start up at the last successful process if the run fails part way through (currently enabled) 
-* Various profile definitions that can be activated when launching a pipeline. These can be used together, depending on their requirements. We can define various profiles depending on the system you're using. See [here](https://www.nextflow.io/docs/latest/config.html?highlight=profiles#config-profiles) for more details on what sorts of things can be included here. 
-* Default parameters for running the pipeline. These include default file names, containers, paths, etc. These can be overwritten when launching the pipeline. 
-* Customisable workflow run info reports with `dag{}`, `report{}`, `timeline{}`, and `trace{}`. You can specify where to output these run summary files. 
+By default, this will generate `work` directory, `results` output directory and a `runInfo` run metrics directory in the same location you ran the pipeline from. 
 
-### What's in `modules/`?
+To specify additional optional tool-specific parameters, see what flags are supported by running:
 
-This directory contains all sub-workflows to be run with `nextflow run main.nf`. It is considered good practice to split out processes into separate `.nf` files and store them here, rather than including them all in the `main.nf` file. This directory is referenced in `main.nf` by using [`include {x} from ./modules/process`](https://www.nextflow.io/docs/latest/dsl2.html#modules). These process scripts currently contain all code to be run in the `script:` block. 
+```
+nextflow run main.nf --help 
+```
 
-Each `.nf` script contains the process to be run, in addition to details of which container to be used, where to publish the output for the process. 
+If for any reason your workflow fails, you are able to resume the workflow from the last successful process with `-resume`. 
 
-### Monitoring workflow run 
-
-A great feature of Nextflow is its ability to produce [metric reports](https://www.nextflow.io/docs/latest/metrics.html#) on run execution including walltime, I/O, and resource usage for each report. These are currently enabled in the `nextflow.config` template.  
-
-## Some recommendations  
+## Infrastructure useage and recommendations 
 
 Coming soon! 
 
-## Resources 
-* [Nextflow training workshop materials](https://training.seqera.io/) 
-* [Nextflow YouTube channel](https://www.youtube.com/c/Nextflow)  
-* [Nextflow quick start guide](https://www.nextflow.io/index.html#GetStarted)
-* [Intro to Nextflow workflows](https://carpentries-incubator.github.io/workflows-nextflow/01-getting-started-with-nextflow/index.html)
-* [Nextflow's nf-core pipelines](https://nf-co.re/)
-* [NF-camp tutorial converting rnaseq-nf pipeline to DSL2](https://github.com/nextflow-io/nfcamp-tutorial)  
-* [DSL2 pipeline structure walkthrough video from nf-core](https://www.youtube.com/watch?v=0xjc7PkF1Bc)
-* [DSL2 modules tutorial video](https://www.youtube.com/watch?v=6k9lWewSBYc)  
-* [Intro to DSL2 video](https://www.youtube.com/watch?v=I-hunuzsh6A&t=658s)  
-* [Nextflow for data intensive pipelines from Pawsey Supercomputing Center](https://www.youtube.com/watch?v=bIRLbYPWHoM)
-* [A great self guided DSL2 tutorial](https://antunderwood.gitlab.io/bioinformant-blog/posts/building_a_dsl2_pipeline_in_nextflow/)  
-* [Australian BioCommons workflow documentation guidelines](https://github.com/AustralianBioCommons/doc_guidelines)
+## Benchmarking 
 
-## Acknowledgements 
+Coming soon!
 
-The work presented here was developed by the Sydney Informatics Hub, a Core Research Facility of the University of Sydney and the Australian BioCommons which is enabled by NCRIS via Bioplatforms Australia. 
+## Workflow summaries
+### Metadata 
+
+|metadata field     | GermlineStructuralV-nf / v1.0     |
+|-------------------|:--------------------------------- |
+|Version            | 1.0                               |
+|Maturity           | stable                            |
+|Creators           | Nandan Deshpande, Georgie Samaha                    |
+|Source             | NA                                |
+|License            | GNU General Public License v3.0   |
+|Workflow manager   | NextFlow                          |
+|Container          | See Component tools               |
+|Install method     | NA                                |
+|GitHub             | https://github.com/Sydney-Informatics-Hub/SomaticShortV_makePON-nf|
+|bio.tools 	        | NA                                |
+|BioContainers      | NA                                | 
+|bioconda           | NA                                |
+
+### Component tools 
+
+To run this pipeline you must have Nextflow and Singularity installed on your machine. All other tools are run using containers. 
+
+|Tool         | Version  |
+|-------------|:---------|
+|Nextflow     |>=20.07.1 |
+|Singularity  |          |
+|R            |          |
+
+
+## Additional notes 
+### Resources 
+
+* [Nextflow documentation](https://www.nextflow.io/docs/latest/index.html) 
+
+### Help/FAQ/Troubleshooting
+
+* It is essential that the reference genome you're using contains the same chromosomes, contigs, and scaffolds as the BAM files. To confirm what contigs are included in your indexed BAM file, you can use Samtools idxstats: 
+```
+samtools idxstats input.bam | cut -f 1
+```
+
+## Acknowledgements/citations/credits
+### Authors 
+- Nandan Deshpande (Sydney Informatics Hub, University of Sydney)   
+- Georgie Samaha (Sydney Informatics Hub, University of Sydney)   
+
+### Acknowledgements 
+
+- This pipeline was built using the [Nextflow DSL2 template](https://github.com/Sydney-Informatics-Hub/Nextflow_DSL2_template).  
+- Documentation was created following the [Australian BioCommons documentation guidelines](https://github.com/AustralianBioCommons/doc_guidelines).  
+
+### Cite us to support us! 
+Acknowledgements (and co-authorship, where appropriate) are an important way for us to demonstrate the value we bring to your research. Your research outcomes are vital for ongoing funding of the Sydney Informatics Hub and national compute facilities. We suggest including the following acknowledgement in any publications that follow from this work:  
+
+The authors acknowledge the technical assistance provided by the Sydney Informatics Hub, a Core Research Facility of the University of Sydney and the Australian BioCommons which is enabled by NCRIS via Bioplatforms Australia. 
