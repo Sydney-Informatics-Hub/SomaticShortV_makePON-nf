@@ -29,7 +29,7 @@ The creation of somatic Panel Of Normals (PoN) involves converting the Normal BA
 ## Diagram
 
 <p align="center"> 
-<img src="./images/Somatic_variant_calling.png" width="80%">
+<img src="./images/Somatic_variant_calling.png" width="60%">
 </p> 
 
 ## User guide 
