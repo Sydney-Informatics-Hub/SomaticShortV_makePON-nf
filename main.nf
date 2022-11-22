@@ -25,34 +25,18 @@ nextflow.enable.dsl=2
 // look for the process called process in modules/moduleName.nf
 // Include { process } from './modules/moduleName'
   
-  refdir='/scratch/wz54/gs5517/sarek_testing/Reference/v0'
 
-// Could not set it to "" or "./" :-(
-base_path="/scratch/wz54/npd561/PIPE-2629_thyroid_carcinoma/nextflow_pipelines/nfcore/sarek/Somatic-ShortV/nextflow/make_PON_and_run_mutect2/final_scripts_production/make_PoN"
-
-
-// Set PATH pointing to the 'bam' files
-params.bams = "/scratch/er01/PIPE-2629-ThyroidCancer/nf_sarek/preprocess_*/Preprocessing/*/Recalibrated/*-{N,T}.recal.bam"
 // bam pair channel
 bam_pair_ch=Channel.fromFilePairs( params.bams )
-
-intervalList=['a','b','c','d','e','f','g','h','i','j','k','l','m','n']
 
 /*
 # This file needs to be created on the fly in bash!! - sample_map_vcf.txt
 */
-
 params.sample_map_vcfs = "$base_path/sample_map_vcf.txt"
 
 
 //mkdir temp_folder
 params.temp_dir_folder="$base_path/temp_folder"
-
-params.outdir="$base_path/results"
-
-
-  
-  
 
 
 /// Print a header for your pipeline 
@@ -115,11 +99,9 @@ def helpMessage() {
     """.stripIndent()
 }
 
-/// Main workflow structure. Include some input/runtime tests here.
-// Make sure to comment what each step does for readability. 
+/// Main workflow structure. 
 
-
-
+// Import subworkflows to be run in the workflow
 include { run_Mutect2_eachNormalSample_splitGatherApproach; GatherVcfs_step; Create_GenomicsDB_from_normalMutect2Calls_GenomicsDBImport; Combine_normalCallsUsing_CreateSomaticPanelOfNormals} from './make_PON_all_steps.nf'
 
 
@@ -142,10 +124,7 @@ workflow {
 // if none of the above are a problem, then run the workflow
 	} else {
 	
-  // Define input channels 
-  cohort_ch = Channel.fromPath("${params.cohort}")
-  outDir_ch = Channel.fromPath("${params.outDir}")
-
+ 
 	run_Mutect2_eachNormalSample_splitGatherApproach(bam_pair_ch,intervalList,params.temp_dir_folder,base_path)
 	
 	GatherVcfs_step(run_Mutect2_eachNormalSample_splitGatherApproach.out.collect(),bam_pair_ch,base_path)
