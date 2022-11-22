@@ -1,11 +1,14 @@
-#!:/usr/bin/env nextflow
+#!/usr/bin/env nextflow
 
-refdir='/scratch/wz54/gs5517/sarek_testing/Reference/v0'
+/// To use DSL-2 will need to include this
+nextflow.enable.dsl=2
 
 
-params.refFasta="$refdir/Homo_sapiens_assembly38.fasta"
-params.refFastaIndex="$refdir/Homo_sapiens_assembly38.fasta.fai"
-params.refFastaDict="$refdir/Homo_sapiens_assembly38.fasta.dict"
+
+
+params.refFasta="$refdir_path/Homo_sapiens_assembly38.fasta"
+params.refFastaIndex="$refdir_path/Homo_sapiens_assembly38.fasta.fai"
+params.refFastaDict="$refdir_path/Homo_sapiens_assembly38.fasta.dict"
 
 
 
@@ -70,7 +73,7 @@ process run_Mutect2_eachNormalSample_splitGatherApproach  {
         """
 
         gatk Mutect2 \
-             -R $refdir/Homo_sapiens_assembly38.fasta \
+             -R $refdir_path/Homo_sapiens_assembly38.fasta \
              -I ${bams[0]} \
 	     --max-mnp-distance 0 \
              -L "$base_path/100M_primary_interval_${splitIntervalNumber}.list" \
@@ -190,7 +193,7 @@ process Combine_normalCallsUsing_CreateSomaticPanelOfNormals {
         """
 
         gatk CreateSomaticPanelOfNormals \
-                -R $refdir/Homo_sapiens_assembly38.fasta \
+                -R $refdir_path/Homo_sapiens_assembly38.fasta \
                 -V gendb://${pon_db} \
                 -O pon.vcf.gz
 
