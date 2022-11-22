@@ -19,10 +19,9 @@
 
 ## Description 
 
-SomaticShortV-makePON-nf is a Nextflow pipeline for creating somatic Panel Of Normals (PoN) to be used for identifying somatic short variant events in Illumina short read whole genome sequence data. 
-We have followed the [GATK Best practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035894731-Somatic-short-variant-discovery-SNVs-Indels-) . The input to this pipeline are  
-
-The creation of somatic Panel Of Normals (PoN) involves converting the Normal BAMs to PON. The PoN's are -
+SomaticShortV-makePON-nf is a Nextflow pipeline for creating somatic Panel Of Normals (PoN). PoN's are used for identifying somatic short variant events in Illumina short read whole genome sequence data. 
+We have followed the [GATK Best practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035894731-Somatic-short-variant-discovery-SNVs-Indels-) .  
+The creation of somatic Panel Of Normals (PoN) involves converting the Normal BAMs to PoN. The PoN's are -
   * Made from normal samples i.e. the samples derived from healthy tissue and 
   * Their main purpose is to capture recurrent technical artifacts in order to improve the results of the variant calling analysis.
 
@@ -45,6 +44,8 @@ To run this pipeline you will need the following inputs:
 * Corresponding BAM index files  
 * Input sample sheet 
 
+
+#
 This pipeline processes paired-end BAM files and is capable of processing multiple samples in parallel. BAM files are expected to be coordinate sorted and indexed (see [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) for an example of a best practice workflow that can generate these files).  
 
 You will need to create a sample sheet with information about the samples you are processing, before running the pipeline. This file must be **tab-separated** and contain a header and one row per sample. Columns should correspond to sampleID, BAM file, BAI file: 
@@ -65,7 +66,6 @@ When you run the pipeline, you will use the mandatory `--input` parameter to spe
 To run this pipeline you will need the following reference files:
 
 * Indexed reference genome in FASTA format 
-* [VEP cache](https://asia.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache) (Optional) 
 
 You will need to download and index a copy of the reference genome you would like to use. Reference FASTA files must be accompanied by a .fai index file. If you are working with a species that has a public reference genome, you can download FASTA files from the [Ensembl](https://asia.ensembl.org/info/data/ftp/index.html), [UCSC](https://genome.ucsc.edu/goldenPath/help/ftp.html), or [NCBI](https://www.ncbi.nlm.nih.gov/genome/doc/ftpfaq/) ftp sites. You can use our [IndexReferenceFasta-nf pipeline](https://github.com/Sydney-Informatics-Hub/IndexReferenceFasta-nf) to generate indexes. 
 
@@ -75,40 +75,13 @@ When you run the pipeline, you will use the mandatory `--ref` parameter to speci
 --ref /path/to/reference.fasta
 ```
 
-If you intend to run the optional step of variant annotation with VEP, you will need to manually download a cache of the VEP database before running the pipeline (if available for your organism). See [these instructions](https://asia.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache) for how to prepare your data and [Ensembl's VEP ftp site](https://ftp.ensembl.org/pub/release-108/variation/indexed_vep_cache/), for available databases. In short, you will need to do the following: 
-
-**Create a local cache directory** 
-
-Be aware, the VEP cache requires a lot of disk space, for example the Hg38 108 release database requires ~21G. Because of this it is essential to create this directory somewhere with enough disk space to store it. Create the directory:  
-```
-mkdir -p <name of cache directory>
-```
-
-**Download a copy of the cache**
-
-Download the cache to your cache directory. For example:  
-```
-wget -P <name of cache directory> ftp://ftp.ensembl.org/pub/release-108/variation/indexed_vep_cache/homo_sapiens_vep_108_GRCh38.tar.gz
-```
-
-Unzip it: 
-
-```
-tar xzf homo_sapiens_vep_108_GRCh38.tar.gz
-```
-
-When you run the pipeline, if you would like to perform variant annotation with VEP, you will use the `--VEPcache` parameter to specify the location and name of the input file: 
-
-```
---VEPcache /path/to/VEP_cache 
-```
 
 ### 3. Clone this repository 
 
 Download the code contained in this repository with: 
 
 ```
-git clone https://github.com/Sydney-Informatics-Hub/GermlineShortV-nf
+git clone https://github.com/Sydney-Informatics-Hub/SomaticShortV_makePON-nf
 ```
 
 This will create a directory with the following structure: 
@@ -157,7 +130,7 @@ Coming soon!
 ## Workflow summaries
 ### Metadata 
 
-|metadata field     | GermlineStructuralV-nf / v1.0     |
+|metadata field     | SomaticShortV_makePON-nf / v1.0     |
 |-------------------|:--------------------------------- |
 |Version            | 1.0                               |
 |Maturity           | stable                            |
